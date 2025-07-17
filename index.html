@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle Game</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <h1>Wordle</h1>
+
+    <div id="modeSelect">
+        <button onclick="startGame('daily')">Daily</button>
+        <button onclick="startGame('repeat')">Repeat</button>
+    </div>
+
+    <div id="gameArea" style="display:none;">
+        <div id="board"></div>
+        <input type="text" id="guessInput" maxlength="5" />
+        <button onclick="submitGuess()">Submit</button>
+        <p id="message"></p>
+        <button id="shareBtn" style="display:none;" onclick="shareResult()">Share</button>
+        <button onclick="returnToMenu()">Return to Menu</button>
+    </div>
+
+    <script src="words.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
