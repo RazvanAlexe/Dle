@@ -1,143 +1,179 @@
-body {
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 0;
-    transition: background 0.3s, color 0.3s;
+:root {
+    --bg-dark: #121212;
+    --bg-light: #f0f0f0;
+    --text-dark: #ffffff;
+    --text-light: #111111;
+    --primary: #4CAF50;
+    --secondary: #FFC107;
+    --absent: #444;
+    --correct: #6aaa64;
+    --present: #c9b458;
+    --border-radius: 8px;
+    --transition-speed: 0.3s;
+    --font-stack: 'Segoe UI', sans-serif;
 }
 
-    body.dark-mode {
-        background-color: #121212;
-        color: #f0f0f0;
-    }
+body {
+    font-family: var(--font-stack);
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+    transition: background-color var(--transition-speed), color var(--transition-speed);
+}
 
     body.light-mode {
-        background-color: #ffffff;
-        color: #111111;
+        background-color: var(--bg-light);
+        color: var(--text-light);
     }
 
 header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+    padding: 1em;
+    border-bottom: 1px solid #333;
 }
 
 h1 {
-    margin: 0;
-    font-size: 1.8rem;
+    font-size: 2rem;
+    margin-bottom: 0.5em;
 }
 
-.mode-toggle button,
-#themeToggle,
-#submitBtn,
-#returnBtn {
-    margin: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 6px;
+.mode-toggle, .social-links {
+    margin: 0.5em auto;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+button, .social-button {
+    padding: 0.6em 1.2em;
+    font-size: 1em;
     border: none;
-    background-color: #3b82f6;
+    border-radius: var(--border-radius);
+    background-color: var(--primary);
     color: white;
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+}
+
+    button:hover, .social-button:hover {
+        background-color: #388e3c;
+    }
+
+.social-button {
+    text-decoration: none;
+    background-color: #1da1f2;
 }
 
 #themeToggle {
-    background-color: transparent;
-    color: inherit;
-    font-size: 1.4rem;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    font-size: 1.4em;
+    padding: 0.2em 0.5em;
 }
 
-#clues {
-    padding: 1rem;
-    font-size: 1.1rem;
-    line-height: 1.5;
+main {
     max-width: 600px;
-    margin: 0 auto;
+    margin: 2em auto;
+    padding: 0 1em;
+    text-align: center;
+}
+
+#ad-container {
+    margin-top: 2em;
+}
+
+    #ad-container ins {
+        display: block;
+        margin: 1em 0;
+    }
+
+#clues p {
+    text-align: left;
+    margin: 0.5em 0;
+    padding: 0.3em 0.5em;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
 }
 
 #board {
-    max-width: 600px;
-    margin: 20px auto;
-    display: grid;
-    grid-template-rows: repeat(6, 1fr);
-    gap: 10px;
+    margin: 1.5em 0;
 }
 
-.row {
+.guess-row {
     display: flex;
     justify-content: center;
-    gap: 5px;
+    margin-bottom: 0.4em;
 }
 
-.tile {
-    width: 50px;
-    height: 50px;
-    border-radius: 6px;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #2e2e2e;
+.letter-box {
+    width: 3em;
+    height: 3em;
+    margin: 0 0.2em;
+    line-height: 3em;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    border-radius: var(--border-radius);
+    text-transform: uppercase;
+    transition: background-color var(--transition-speed);
+}
+
+.correct {
+    background-color: var(--correct);
     color: white;
-    transition: all 0.3s ease;
 }
 
-    .tile.correct {
-        background-color: #22c55e;
-    }
+.present {
+    background-color: var(--present);
+    color: white;
+}
 
-    .tile.present {
-        background-color: #facc15;
-        color: black;
-    }
+.absent {
+    background-color: var(--absent);
+    color: white;
+}
 
-    .tile.absent {
-        background-color: #555;
-    }
+#inputSection {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-bottom: 1em;
+}
+
+#guessInput {
+    padding: 0.6em;
+    font-size: 1.1em;
+    width: 150px;
+    border-radius: var(--border-radius);
+    border: 1px solid #888;
+}
+
+#submitBtn {
+    font-size: 1.1em;
+}
 
 #message {
-    text-align: center;
+    margin-top: 1em;
     font-weight: bold;
-    min-height: 2rem;
-    margin-top: 1rem;
+    font-size: 1.1em;
 }
 
-@media (max-width: 480px) {
-    .tile {
-        width: 40px;
-        height: 40px;
-        font-size: 1.2rem;
+#returnBtn {
+    margin-top: 2em;
+}
+
+@media (max-width: 600px) {
+    .letter-box {
+        width: 2.5em;
+        height: 2.5em;
+        font-size: 1.3em;
     }
 
-    #clues {
-        font-size: 1rem;
+    #guessInput {
+        width: 100px;
     }
-}
-
-.social-links {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 10px;
-}
-
-.social-button {
-    background-color: #444;
-    color: white;
-    padding: 8px 12px;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: background 0.2s ease;
-}
-
-.social-button:hover {
-    background-color: #666;
-}
-
-.ad-container {
-    margin: 20px auto;
-    max-width: 320px;
-    text-align: center;
 }

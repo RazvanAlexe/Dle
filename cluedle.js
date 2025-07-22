@@ -1,126 +1,124 @@
-﻿let currentPuzzle;
-let currentGuess = '';
-let attempts = [];
-let gameOver = false;
+﻿let currentClueSet = null;
+let currentGuessIndex = 0;
+const maxGuesses = 6;
+let isGameOver = false;
 
 const board = document.getElementById('board');
-const cluesBox = document.getElementById('clues');
-const message = document.getElementById('message');
-const submitBtn = document.getElementById('submitBtn');
-const returnBtn = document.getElementById('returnBtn');
-const themeToggle = document.getElementById('themeToggle');
+const cluesSection = document.getElementById('clues');
 const gameContainer = document.getElementById('gameContainer');
 const dailyBtn = document.getElementById('dailyBtn');
 const practiceBtn = document.getElementById('practiceBtn');
+const returnBtn = document.getElementById('returnBtn');
+const submitBtn = document.getElementById('submitBtn');
+const guessInput = document.getElementById('guessInput');
+const message = document.getElementById('message');
+const themeToggle = document.getElementById('themeToggle');
 
-function selectPuzzle(mode) {
-    gameContainer.style.display = 'block';
-    document.querySelector('.mode-toggle').style.display = 'none';
-
-    if (mode === 'daily') {
-        const today = new Date().toISOString().split('T')[0];
-        const seed = today.split('-').join('');
-        const index = parseInt(seed) % clues.length;
-        currentPuzzle = clues[index];
-    } else {
-        currentPuzzle = clues[Math.floor(Math.random() * clues.length)];
-    }
-    startGame();
+function pickRandomClueSet() {
+    return clues[Math.floor(Math.random() * clues.length)];
 }
 
-function startGame() {
-    cluesBox.innerHTML = currentPuzzle.clues.map(clue => `<p>💬 ${clue}</p>`).join('');
-    board.innerHTML = '';
-    currentGuess = '';
-    attempts = [];
-    gameOver = false;
+function getDailyClueSet() {
+    const today = new Date().toISOString().slice(0, 10);
+    const seed = today.split('-').join('');
+    const index = parseInt(seed) % clues.length;
+    return clues[index];
+}
+
+function startGame(mode) {
+    currentGuessIndex = 0;
+    isGameOver = false;
     message.textContent = '';
-    drawBoard();
-}
-
-function drawBoard() {
+    guessInput.value = '';
     board.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
-        const row = document.createElement('div');
-        row.className = 'row';
-        const guess = attempts[i] || '';
-        for (let j = 0; j < 5; j++) {
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            const letter = guess[j] || '';
-            tile.textContent = letter;
+    cluesSection.innerHTML = '';
+    gameContainer.style.display = 'block';
 
-            if (guess && currentPuzzle) {
-                const answerLetter = currentPuzzle.answer[j];
-                if (letter === answerLetter) {
-                    tile.classList.add('correct');
-                } else if (currentPuzzle.answer.includes(letter)) {
-                    tile.classList.add('present');
-                } else {
-                    tile.classList.add('absent');
-                }
-            }
-            row.appendChild(tile);
-        }
-        board.appendChild(row);
-    }
+    currentClueSet = mode === 'daily' ? getDailyClueSet() : pickRandomClueSet();
+
+    currentClueSet.clues.forEach(clue => {
+        const p = document.createElement('p');
+        p.textContent = '🧩 ' + clue;
+        cluesSection.appendChild(p);
+    });
 }
 
-function handleKeyPress(e) {
-    if (gameOver) return;
-    const key = e.key.toLowerCase();
-    if (key === 'enter') {
-        submitGuess();
-    } else if (key === 'backspace') {
-        currentGuess = currentGuess.slice(0, -1);
-    } else if (/^[a-z]$/.test(key) && currentGuess.length < 5) {
-        currentGuess += key;
-    }
-    drawBoard();
-    fillCurrentRow();
-}
+function displayGuessFeedback(guess, correct) {
+    const row = document.createElement('div');
+    row.className = 'guess-row';
 
-function fillCurrentRow() {
-    const row = board.children[attempts.length];
-    if (!row) return;
+    const letterUsed = {};
+    for (let i = 0; i < correct.length; i++) {
+        const ch = correct[i];
+        letterUsed[ch] = (letterUsed[ch] || 0) + 1;
+    }
+
+    const boxStates = Array(5).fill('absent');
     for (let i = 0; i < 5; i++) {
-        row.children[i].textContent = currentGuess[i] || '';
+        if (guess[i] === correct[i]) {
+            boxStates[i] = 'correct';
+            letterUsed[guess[i]]--;
+        }
     }
+
+    for (let i = 0; i < 5; i++) {
+        if (boxStates[i] === 'correct') continue;
+        if (correct.includes(guess[i]) && letterUsed[guess[i]] > 0) {
+            boxStates[i] = 'present';
+            letterUsed[guess[i]]--;
+        }
+    }
+
+    for (let i = 0; i < guess.length; i++) {
+        const span = document.createElement('span');
+        span.classList.add('letter-box', boxStates[i]);
+        span.textContent = guess[i].toUpperCase();
+        row.appendChild(span);
+    }
+
+    board.appendChild(row);
 }
 
-function submitGuess() {
-    if (currentGuess.length !== 5) {
-        message.textContent = 'Enter a 5-letter word';
+function handleGuess() {
+    if (isGameOver) return;
+
+    const guess = guessInput.value.toLowerCase().trim();
+    if (guess.length !== 5 || !/^[a-z]{5}$/.test(guess)) {
+        message.textContent = 'Enter a valid 5-letter word.';
         return;
     }
-    attempts.push(currentGuess);
-    drawBoard();
-    if (currentGuess === currentPuzzle.answer) {
-        message.textContent = 'You got it!';
-        gameOver = true;
-    } else if (attempts.length >= 6) {
-        message.textContent = `Out of tries! The word was “${currentPuzzle.answer}”.`;
-        gameOver = true;
-    } else {
-        message.textContent = '';
+
+    displayGuessFeedback(guess, currentClueSet.answer);
+    currentGuessIndex++;
+    guessInput.value = '';
+
+    if (guess === currentClueSet.answer) {
+        message.textContent = '🎉 Correct! You solved it!';
+        isGameOver = true;
+    } else if (currentGuessIndex >= maxGuesses) {
+        message.textContent = `❌ Out of tries. Answer was: ${currentClueSet.answer.toUpperCase()}`;
+        isGameOver = true;
     }
-    currentGuess = '';
 }
 
-submitBtn.addEventListener('click', submitGuess);
+submitBtn.addEventListener('click', handleGuess);
+
 returnBtn.addEventListener('click', () => {
     gameContainer.style.display = 'none';
-    document.querySelector('.mode-toggle').style.display = 'flex';
+    cluesSection.innerHTML = '';
     board.innerHTML = '';
-    cluesBox.innerHTML = '';
+    guessInput.value = '';
+    message.textContent = '';
 });
+
+dailyBtn.addEventListener('click', () => startGame('daily'));
+practiceBtn.addEventListener('click', () => startGame('practice'));
 
 themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     document.body.classList.toggle('light-mode');
 });
 
-dailyBtn.addEventListener('click', () => selectPuzzle('daily'));
-practiceBtn.addEventListener('click', () => selectPuzzle('practice'));
-
-document.addEventListener('keydown', handleKeyPress);
+guessInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleGuess();
+});
