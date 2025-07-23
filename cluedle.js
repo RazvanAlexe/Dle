@@ -3,6 +3,7 @@ let currentGuessIndex = 0;
 const maxGuesses = 6;
 let isGameOver = false;
 let currentMode = 'practice';
+let dailyKey = '';
 
 const board = document.getElementById('board');
 const cluesSection = document.getElementById('clues');
@@ -20,11 +21,55 @@ function pickRandomClueSet() {
     return clues[Math.floor(Math.random() * clues.length)];
 }
 
+function getTodayKey() {
+    return new Date().toISOString().slice(0, 10);
+}
+
 function getDailyClueSet() {
-    const today = new Date().toISOString().slice(0, 10);
-    const seed = today.split('-').join('');
+    const seed = getTodayKey().split('-').join('');
     const index = parseInt(seed) % clues.length;
     return clues[index];
+}
+
+function loadDailyProgress() {
+    const today = getTodayKey();
+    dailyKey = `cluedle_daily_data_${today}`;
+    const saved = localStorage.getItem(dailyKey);
+    return saved ? JSON.parse(saved) : null;
+}
+
+function saveDailyProgress() {
+    if (currentMode !== 'daily') return;
+    const data = {
+        answer: currentClueSet.answer,
+        clues: currentClueSet.clues,
+        guesses: Array.from(document.querySelectorAll('.guess-row')).map(row =>
+            Array.from(row.querySelectorAll('.letter-box')).map(el => el.textContent).join('').toLowerCase()
+        ),
+        isGameOver
+    };
+    localStorage.setItem(dailyKey, JSON.stringify(data));
+}
+
+function restoreDailyState(saved) {
+    currentClueSet = { answer: saved.answer, clues: saved.clues };
+    isGameOver = saved.isGameOver;
+    currentGuessIndex = saved.guesses.length;
+
+    saved.clues.forEach(clue => {
+        const p = document.createElement('p');
+        p.textContent = '🧩 ' + clue;
+        cluesSection.appendChild(p);
+    });
+
+    saved.guesses.forEach(guess => displayGuessFeedback(guess, saved.answer));
+
+    if (isGameOver) {
+        message.textContent = '🛑 You already finished today’s game.';
+        guessInput.disabled = true;
+        submitBtn.disabled = true;
+        showShareGrid(saved.guesses, saved.answer);
+    }
 }
 
 function startGame(mode) {
@@ -40,26 +85,28 @@ function startGame(mode) {
     guessInput.disabled = false;
     submitBtn.disabled = false;
 
-    currentClueSet = mode === 'daily' ? getDailyClueSet() : pickRandomClueSet();
-
     if (mode === 'daily') {
-        const today = new Date().toISOString().slice(0, 10);
-        const key = `cluedle_played_${today}`;
-        const alreadyPlayed = localStorage.getItem(key);
-        if (alreadyPlayed) {
-            isGameOver = true;
-            message.textContent = "🛑 You've already played today's Cluedle.";
-            guessInput.disabled = true;
-            submitBtn.disabled = true;
+        const saved = loadDailyProgress();
+        if (saved) {
+            restoreDailyState(saved);
             return;
         }
-    }
 
-    currentClueSet.clues.forEach(clue => {
-        const p = document.createElement('p');
-        p.textContent = '🧩 ' + clue;
-        cluesSection.appendChild(p);
-    });
+        currentClueSet = getDailyClueSet();
+        currentClueSet.clues.forEach(clue => {
+            const p = document.createElement('p');
+            p.textContent = '🧩 ' + clue;
+            cluesSection.appendChild(p);
+        });
+        saveDailyProgress();
+    } else {
+        currentClueSet = pickRandomClueSet();
+        currentClueSet.clues.forEach(clue => {
+            const p = document.createElement('p');
+            p.textContent = '🧩 ' + clue;
+            cluesSection.appendChild(p);
+        });
+    }
 }
 
 function displayGuessFeedback(guess, correct) {
@@ -98,31 +145,37 @@ function displayGuessFeedback(guess, correct) {
     board.appendChild(row);
 }
 
+function showShareGrid(guesses, answer) {
+    let result = `🧩 Cluedle ${guesses.length <= maxGuesses ? guesses.length : 'X'}/${maxGuesses}\n`;
+    guesses.forEach(guess => {
+        for (let i = 0; i < guess.length; i++) {
+            if (guess[i] === answer[i]) {
+                result += '🟩';
+            } else if (answer.includes(guess[i])) {
+                result += '🟨';
+            } else {
+                result += '⬛';
+            }
+        }
+        result += '\n';
+    });
+    shareBox.style.display = 'block';
+    shareBox.querySelector('textarea').value = result.trim();
+}
+
 function endGame(solved) {
     isGameOver = true;
     guessInput.disabled = true;
     submitBtn.disabled = true;
 
+    const guesses = Array.from(document.querySelectorAll('.guess-row')).map(row =>
+        Array.from(row.querySelectorAll('.letter-box')).map(el => el.textContent).join('').toLowerCase()
+    );
+
     if (currentMode === 'daily') {
-        const today = new Date().toISOString().slice(0, 10);
-        localStorage.setItem(`cluedle_played_${today}`, solved ? 'win' : 'fail');
+        saveDailyProgress();
+        showShareGrid(guesses, currentClueSet.answer);
     }
-
-    // Build result grid
-    let result = `🧩 Cluedle ${solved ? currentGuessIndex : 'X'}/${maxGuesses}\n`;
-    const rows = document.querySelectorAll('.guess-row');
-
-    rows.forEach(row => {
-        row.querySelectorAll('.letter-box').forEach(box => {
-            if (box.classList.contains('correct')) result += '🟩';
-            else if (box.classList.contains('present')) result += '🟨';
-            else result += '⬛';
-        });
-        result += '\n';
-    });
-
-    shareBox.style.display = 'block';
-    shareBox.querySelector('textarea').value = result.trim();
 }
 
 function handleGuess() {
@@ -137,6 +190,7 @@ function handleGuess() {
     displayGuessFeedback(guess, currentClueSet.answer);
     currentGuessIndex++;
     guessInput.value = '';
+    saveDailyProgress();
 
     if (guess === currentClueSet.answer) {
         message.textContent = '🎉 Correct! You solved it!';
@@ -156,7 +210,6 @@ function copyResult() {
 
 // Event Listeners
 submitBtn.addEventListener('click', handleGuess);
-
 returnBtn.addEventListener('click', () => {
     gameContainer.style.display = 'none';
     cluesSection.innerHTML = '';
@@ -164,15 +217,12 @@ returnBtn.addEventListener('click', () => {
     guessInput.value = '';
     message.textContent = '';
 });
-
 dailyBtn.addEventListener('click', () => startGame('daily'));
 practiceBtn.addEventListener('click', () => startGame('practice'));
-
 themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     document.body.classList.toggle('light-mode');
 });
-
 guessInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleGuess();
 });
